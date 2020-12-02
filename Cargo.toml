@@ -1,0 +1,29 @@
+[package]
+name = "service-logging"
+version = "0.2.0"
+authors = ["steve <dev@somecool.net>"]
+edition = "2018"
+license = "MIT/Apache-2.0"
+keywords = ["logging","wasm","coralogix"]
+description = "Log to external service; includes Coralogix client"
+
+[features]
+# "std": use std allocator; "alloc": you provide allocator
+default=["alloc"]
+std = ["serde_json/std", "serde/std" ]
+alloc = ["serde_json/alloc", "serde/alloc" ]
+
+[dependencies]
+async-trait = "0.1"
+
+# optional
+serde_json = { version="1.0", default-features=false, optional=true }
+serde = { version = "1.0", optional=true, features=["derive"] }
+
+[dependencies.reqwest]
+version = "^0.10.9"
+features = [ "json" ]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+js-sys = "0.3"
+wasm-bindgen = "0.2"
