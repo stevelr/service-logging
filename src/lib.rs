@@ -9,7 +9,7 @@ mod time;
 #[cfg(target = "wasm32")]
 pub use logging::ConsoleLogger;
 pub use logging::{
-    AppendsLog, CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,
+    CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,
 };
 
 /// Send logs to logger
@@ -23,9 +23,10 @@ pub async fn send_logs(
     Ok(())
 }
 
-/// Common traits used by service-logging
-pub mod preamble {
+/// Common traits for service-logging
+pub mod prelude {
     pub use crate::logging::AppendsLog;
+    pub use crate::logging::AppendsLogInnerMut;
 }
 
 /// The log! macro can be used to create structured log entries for later use by logger.send
@@ -43,8 +44,7 @@ pub mod preamble {
 /// ```
 ///
 /// Parameters are of the form: (queue, severity, key:value, key:value, ...).
-/// `queue` is any object that implements [AppendsLog] ([crate::LogQueue] or
-/// [wasm_service::Context], for example).
+/// `queue` is any object that contains `fn add(&mut self, e: LogEntry)`
 /// Values can be anything that implements [std::String::ToString]
 /// Key names must use the same syntax as a rust identifier, e.g., no spaces, punctuation, etc.
 ///

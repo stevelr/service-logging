@@ -156,11 +156,9 @@ impl LogQueue {
     pub fn clear(&mut self) {
         self.entries.clear();
     }
-}
 
-impl AppendsLog for LogQueue {
     /// Appends a log entry to the queue
-    fn log(&mut self, e: LogEntry) {
+    pub fn log(&mut self, e: LogEntry) {
         self.entries.push(e)
     }
 }
@@ -171,10 +169,16 @@ pub trait AppendsLog {
     fn log(&mut self, e: LogEntry);
 }
 
-impl AppendsLog for Rc<Mutex<LogQueue>> {
+/// Can append log entries - used for objects with inner mutability
+pub trait AppendsLogInnerMut {
+    /// Appends entry to log queue
+    fn log(&self, e: LogEntry);
+}
+
+impl AppendsLogInnerMut for Rc<Mutex<LogQueue>> {
     /// Appends log entry to deferred log queue
     /// Since the parameter is not mut, this only works with Mutex or cell types
-    fn log(&mut self, e: LogEntry) {
+    fn log(&self, e: LogEntry) {
         let mut queue = self.lock().unwrap();
         queue.log(e);
     }
