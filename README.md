@@ -1,6 +1,4 @@
-Aggregate structured logs for sending to external service.
-Contains implementations for Coralogix and (for wasm) console.log.
-
+Asynchronous structured logging in tiny library (6KB) with clients for Coralogix and console.log. WASM compatible.
 
 ## Usage
 

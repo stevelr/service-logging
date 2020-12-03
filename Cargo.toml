@@ -1,14 +1,16 @@
 [package]
 name = "service-logging"
-version = "0.2.5"
-authors = ["steve <dev@somecool.net>"]
+version = "0.2.5-1"
+authors = ["stevelr <dev@somecool.net>"]
 edition = "2018"
-license = "MIT/Apache-2.0"
-keywords = ["logging","wasm","coralogix"]
-description = "Log to external service; includes Coralogix client"
+license = "MIT OR Apache-2.0"
+description = "Asynchronous structured logging in tiny library (6KB) with clients for Coralogix and console.log. WASM compatible"
 repository = "https://github.com/stevelr/service-logging"
+homepage = "https://github.com/stevelr/service-logging"
 documentation = "https://docs.rs/service-logging"
 readme = "README.md"
+keywords = ["logging","wasm","coralogix"]
+categories = ["development-tools::debugging","api-bindings","wasm","asynchronous"]
 
 [features]
 # "std": use std allocator; "alloc": you provide allocator
