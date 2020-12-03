@@ -3,10 +3,11 @@
 use crate::time::current_time_millis;
 use async_trait::async_trait;
 use serde::Serialize;
+use serde_repr::Serialize_repr;
 use std::{fmt, rc::Rc, sync::Mutex};
 
 /// Severity level
-#[derive(Debug, Serialize, PartialEq, PartialOrd)]
+#[derive(Debug, Serialize_repr, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Severity {
     /// The most verbose level, aka Trace
@@ -110,14 +111,18 @@ impl Default for LogEntry {
     }
 }
 
-/// Log message for sending to logging service
+/// Log payload for Coralogix service
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
-struct LogMsg {
-    private_key: &'static str,
-    application_name: &'static str,
-    subsystem_name: &'static str,
-    log_entries: Vec<LogEntry>,
+struct CxLogMsg<'a> {
+    /// api key
+    pub private_key: &'a str,
+    /// application name - dimension field
+    pub application_name: &'a str,
+    /// subsystem name - dimension field
+    pub subsystem_name: &'a str,
+    /// log messages
+    pub log_entries: Vec<LogEntry>,
 }
 
 /// Queue of log entries to be sent to log service
@@ -254,19 +259,19 @@ impl Logger for CoralogixLogger {
         sub: &'static str,
         entries: Vec<LogEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let msg = LogMsg {
+        let msg = CxLogMsg {
             subsystem_name: sub,
             log_entries: entries,
             private_key: self.config.api_key,
             application_name: self.config.application_name,
         };
-        let _resp = self
+        let resp = self
             .client
             .post(self.config.endpoint)
             .json(&msg)
             .send()
-            .await?
-            .error_for_status()?;
+            .await?;
+        check_status(resp).await?;
         Ok(())
     }
 }
@@ -300,3 +305,40 @@ impl Logger for ConsoleLogger {
         Ok(())
     }
 }
+
+// Error handling for Coralogix
+// Instead of just returning error for non-2xx status (via resp.error_for_status)
+// include response body which may have additional diagnostic info
+async fn check_status(resp: reqwest::Response) -> Result<(), Box<dyn std::error::Error>> {
+    match resp.status().is_success() {
+        true => Ok(()),
+        false => {
+            let status = resp.status().as_u16();
+            let body = resp.text().await.unwrap_or_default();
+            Err(Box::new(Error::Cx(format!(
+                "Logging Error: status:{} {}",
+                status, body
+            ))))
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Error {
+    // Error sending coralogix logs
+    Cx(String),
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Error::Cx(s) => s,
+            }
+        )
+    }
+}
+
+impl std::error::Error for Error {}
