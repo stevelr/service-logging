@@ -4,7 +4,7 @@
 mod logging;
 mod time;
 
-#[cfg(target = "wasm32")]
+#[cfg(any(doc, target_arch = "wasm32"))]
 pub use logging::ConsoleLogger;
 pub use logging::{
     CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,

@@ -271,30 +271,31 @@ impl Logger for CoralogixLogger {
     }
 }
 
-/// Logger that sends all messages to console.log (browser).
-#[cfg(target = "wasm32")]
+/// Logger that sends all messages to console.log (browser). Only available for "wasm32" target builds
+#[cfg(any(doc, target_arch = "wasm32"))]
 #[derive(Default, Debug)]
 pub struct ConsoleLogger {}
 
-#[cfg(target = "wasm32")]
+#[cfg(any(doc, target_arch = "wasm32"))]
 impl ConsoleLogger {
+    /// Initialize console logger. (Only available for "wasm32" target builds)
     pub fn init() -> Box<dyn Logger + Send> {
         Box::new(ConsoleLogger::default())
     }
 }
 
-#[cfg(target = "wasm32")]
+#[cfg(any(doc, target_arch = "wasm32"))]
 #[async_trait(?Send)]
 impl Logger for ConsoleLogger {
+    /// Sends logs to console.log handler
     async fn send(
         &self,
         sub: &'static str,
         entries: Vec<LogEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        use web_sys::console;
         for e in entries.iter() {
             let msg = format!("{} {} {} {}", e.timestamp, sub, e.severity, e.text);
-            console::log_1(&wasm_bindgen::JsValue::from_str(&msg));
+            web_sys::console::log_1(&wasm_bindgen::JsValue::from_str(&msg));
         }
         Ok(())
     }
