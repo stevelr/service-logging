@@ -1,6 +1,6 @@
 //! Asynchronous logging
 //!
-use crate::{time::current_time_millis, Error};
+use crate::time::current_time_millis;
 use async_trait::async_trait;
 use serde::Serialize;
 use std::{fmt, rc::Rc, sync::Mutex};
@@ -33,8 +33,8 @@ impl Default for Severity {
 }
 
 impl std::str::FromStr for Severity {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<Severity, Error> {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Severity, Self::Err> {
         match s {
             "debug" | "Debug" | "DEBUG" => Ok(Severity::Debug),
             "verbose" | "Verbose" | "VERBOSE" => Ok(Severity::Verbose),
@@ -42,7 +42,7 @@ impl std::str::FromStr for Severity {
             "warning" | "Warning" | "WARNING" => Ok(Severity::Warning),
             "error" | "Error" | "ERROR" => Ok(Severity::Error),
             "critical" | "Critical" | "CRITICAL" => Ok(Severity::Critical),
-            _ => Err(Error::Parse(format!("Invalid severity: {}", s))),
+            _ => Err(format!("Invalid severity: {}", s)),
         }
     }
 }
@@ -68,7 +68,7 @@ impl fmt::Display for Severity {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEntry {
-    /// Current timestamp, always milliseconds since epoch in UTC
+    /// Current timestamp, milliseconds since epoch in UTC
     pub timestamp: u64,
     /// Severity of this entry
     pub severity: Severity,
@@ -156,20 +156,25 @@ impl LogQueue {
     pub fn clear(&mut self) {
         self.entries.clear();
     }
+}
 
+impl AppendsLog for LogQueue {
     /// Appends a log entry to the queue
-    pub fn log(&mut self, e: LogEntry) {
+    fn log(&mut self, e: LogEntry) {
         self.entries.push(e)
     }
 }
 
-/// Can append log entries
+/// Can append log entries.
+/// (technically, the first param of the log! macro just needs to implement this fn signature,
+/// and doesn't need to impl this trait)
 pub trait AppendsLog {
     /// Appends entry to log queue
     fn log(&mut self, e: LogEntry);
 }
 
-/// Can append log entries - used for objects with inner mutability
+/// Can append log entries.
+/// Used for objects with inner mutability
 pub trait AppendsLogInnerMut {
     /// Appends entry to log queue
     fn log(&self, e: LogEntry);
@@ -214,7 +219,7 @@ pub struct CoralogixConfig {
     pub api_key: &'static str,
     /// Application name, included as a feature for all log messages
     pub application_name: &'static str,
-    /// URL prefix for service invocation, e.g. 'https://api.coralogix.con/api/v1/logs'
+    /// URL prefix for service invocation, e.g. `https://api.coralogix.con/api/v1/logs`
     pub endpoint: &'static str,
 }
 
@@ -227,7 +232,7 @@ unsafe impl Send for CoralogixLogger {}
 
 impl CoralogixLogger {
     /// Initialize logger with configuration
-    pub fn init(config: CoralogixConfig) -> Result<Box<dyn Logger>, Error> {
+    pub fn init(config: CoralogixConfig) -> Result<Box<dyn Logger>, reqwest::Error> {
         use reqwest::header::{self, HeaderValue, CONNECTION, CONTENT_TYPE};
         let mut headers = header::HeaderMap::new();
         // all our requests are json. this header is recommended by Coralogix

@@ -1,8 +1,6 @@
 #![deny(missing_docs)]
 //! Library for aggregating logs and sending to logging service.
 //! Contains implementations for Coralogix and (for wasm) console.log
-mod error;
-pub use error::Error;
 mod logging;
 mod time;
 
@@ -32,7 +30,7 @@ pub mod prelude {
 /// The log! macro can be used to create structured log entries for later use by logger.send
 ///
 /// ```
-/// use service_logging::{preamble::*, log, LogQueue, Severity};
+/// use service_logging::{prelude::*, log, LogQueue, Severity};
 /// let mut lq = LogQueue::default();
 /// let url = "https://example.com";
 ///
@@ -44,8 +42,10 @@ pub mod prelude {
 /// ```
 ///
 /// Parameters are of the form: (queue, severity, key:value, key:value, ...).
-/// `queue` is any object that contains `fn add(&mut self, e: LogEntry)`
-/// Values can be anything that implements [std::String::ToString]
+/// `queue` is any object that implements `fn add(&mut self, e: LogEntry)`
+/// (such as [LogQueue] or [wasm_service::Context])
+///
+/// Values can be anything that implements [ToString]
 /// Key names must use the same syntax as a rust identifier, e.g., no spaces, punctuation, etc.
 ///
 /// The following keys are "special" (known to Coralogix and used for categorization

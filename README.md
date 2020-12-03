@@ -7,12 +7,12 @@ Contains implementations for Coralogix and (for wasm) console.log.
 Use the `log!` macro to log key-value pairs, which are json-encoded
 before sending to logging service
 
-```
-use service_logging::{log,LogQueue, Severity::{Info,Warning}};
+```rust
+use service_logging::{log, LogQueue, Severity::{Info,Error}};
 let logger =  CoralogixLogger::init(CoralogixConfig{
     api_key: "0000",
-	application_name: "MyApp",
-	endpoint: "https://api.coralogix.com/api/v1/logs"});
+    application_name: "MyApp",
+    endpoint: "https://api.coralogix.com/api/v1/logs"});
 let mut lq = LogQueue::default();
 
 log!(lq, Info, 
@@ -27,5 +27,5 @@ log!(lq, Error,
   attempts: count
 );
 
-send_logs(lq.take(), &logger).expect("send logs");
+send_logs(lq.take(), &logger)?;
 ```
