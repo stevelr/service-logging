@@ -1,11 +1,14 @@
 [package]
 name = "service-logging"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["steve <dev@somecool.net>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
 keywords = ["logging","wasm","coralogix"]
 description = "Log to external service; includes Coralogix client"
+repository = "https://github.com/stevelr/service-logging"
+documentation = "https://docs.rs/service-logging"
+readme = "README.md"
 
 [features]
 # "std": use std allocator; "alloc": you provide allocator
