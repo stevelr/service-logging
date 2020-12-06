@@ -213,7 +213,7 @@ pub trait Logger {
     /// Send entries to logger
     async fn send(
         &self,
-        sub: &'static str,
+        sub: &str,
         entries: Vec<LogEntry>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
@@ -256,22 +256,24 @@ impl Logger for CoralogixLogger {
     /// Send logs to Coralogix service. May return error if there was a problem sending.
     async fn send(
         &self,
-        sub: &'static str,
+        sub: &str,
         entries: Vec<LogEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let msg = CxLogMsg {
-            subsystem_name: sub,
-            log_entries: entries,
-            private_key: self.config.api_key,
-            application_name: self.config.application_name,
-        };
-        let resp = self
-            .client
-            .post(self.config.endpoint)
-            .json(&msg)
-            .send()
-            .await?;
-        check_status(resp).await?;
+        if !entries.is_empty() {
+            let msg = CxLogMsg {
+                subsystem_name: sub,
+                log_entries: entries,
+                private_key: self.config.api_key,
+                application_name: self.config.application_name,
+            };
+            let resp = self
+                .client
+                .post(self.config.endpoint)
+                .json(&msg)
+                .send()
+                .await?;
+            check_status(resp).await?;
+        }
         Ok(())
     }
 }
@@ -295,7 +297,7 @@ impl Logger for ConsoleLogger {
     /// Sends logs to console.log handler
     async fn send(
         &self,
-        sub: &'static str,
+        sub: &str,
         entries: Vec<LogEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         for e in entries.iter() {

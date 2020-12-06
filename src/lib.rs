@@ -10,17 +10,6 @@ pub use logging::{
     CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,
 };
 
-/// Send logs to logger
-pub async fn send_logs(
-    entries: Vec<LogEntry>,
-    logger: &Box<dyn Logger>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    if !entries.is_empty() {
-        logger.send("http", entries).await?;
-    }
-    Ok(())
-}
-
 /// Common traits for service-logging
 pub mod prelude {
     pub use crate::logging::AppendsLog;

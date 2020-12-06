@@ -25,5 +25,5 @@ log!(lq, Error,
   attempts: count
 );
 
-send_logs(lq.take(), &logger)?;
+logger.send("http", lq.take()).await?;
 ```
