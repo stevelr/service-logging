@@ -163,32 +163,18 @@ impl LogQueue {
     }
 }
 
-impl AppendsLog for LogQueue {
+impl crate::AppendsLog for LogQueue {
     /// Appends a log entry to the queue
     fn log(&mut self, e: LogEntry) {
         self.entries.push(e)
     }
 }
 
-/// Can append log entries.
-/// (technically, the first param of the log! macro just needs to implement this fn signature,
-/// and doesn't need to impl this trait)
-pub trait AppendsLog {
-    /// Appends entry to log queue
-    fn log(&mut self, e: LogEntry);
-}
-
-/// Can append log entries.
-/// Used for objects with inner mutability
-pub trait AppendsLogInnerMut {
-    /// Appends entry to log queue
-    fn log(&self, e: LogEntry);
-}
-
-impl AppendsLogInnerMut for Rc<Mutex<LogQueue>> {
+impl crate::AppendsLogInnerMut for Rc<Mutex<LogQueue>> {
     /// Appends log entry to deferred log queue
     /// Since the parameter is not mut, this only works with Mutex or cell types
     fn log(&self, e: LogEntry) {
+        use crate::AppendsLog;
         let mut queue = self.lock().unwrap();
         queue.log(e);
     }

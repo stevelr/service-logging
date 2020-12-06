@@ -10,10 +10,23 @@ pub use logging::{
     CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,
 };
 
+/// Can append log entries.
+pub trait AppendsLog {
+    /// Appends entry to log queue
+    fn log(&mut self, e: LogEntry);
+}
+
+/// Can append log entries.
+/// Used for objects with inner mutability
+pub trait AppendsLogInnerMut {
+    /// Appends entry to log queue
+    fn log(&self, e: LogEntry);
+}
+
 /// Common traits for service-logging
 pub mod prelude {
-    pub use crate::logging::AppendsLog;
-    pub use crate::logging::AppendsLogInnerMut;
+    pub use crate::AppendsLog;
+    pub use crate::AppendsLogInnerMut;
 }
 
 /// The log! macro can be used to create structured log entries for later use by logger.send
