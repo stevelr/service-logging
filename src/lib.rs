@@ -1,6 +1,7 @@
 #![deny(missing_docs)]
 //! Library for aggregating logs and sending to logging service.
-//! Contains implementations for Coralogix and (for wasm) console.log
+//! Contains implementations for [Coralogix](https://coralogix.com/)
+//! and (for wasm) console.log
 mod logging;
 mod time;
 
@@ -10,14 +11,16 @@ pub use logging::{
     CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,
 };
 
-/// Can append log entries.
+/// Can append log entries. For future compatibility, import this trait with
+/// `use service_logging::prelude::*` instead of naming this trait directly.
 pub trait AppendsLog {
     /// Appends entry to log queue
     fn log(&mut self, e: LogEntry);
 }
 
-/// Can append log entries.
-/// Used for objects with inner mutability
+/// Can append log entries. Used for objects with inner mutability
+/// For future compatibility, import this trait with
+/// `use service_logging::prelude::*` instead of naming this trait directly.
 pub trait AppendsLogInnerMut {
     /// Appends entry to log queue
     fn log(&self, e: LogEntry);
@@ -29,7 +32,7 @@ pub mod prelude {
     pub use crate::AppendsLogInnerMut;
 }
 
-/// The log! macro can be used to create structured log entries for later use by logger.send
+/// The `log!` macro can be used to create structured log entries for later use by [Logger.send](Logger::send)
 ///
 /// ```
 /// use service_logging::{prelude::*, log, LogQueue, Severity};
@@ -44,8 +47,9 @@ pub mod prelude {
 /// ```
 ///
 /// Parameters are of the form: (queue, severity, key:value, key:value, ...).
-/// `queue` is any object that implements `fn add(&mut self, e: LogEntry)`
-/// (such as [LogQueue] or [wasm_service::Context])
+/// `queue` is any object that implements `fn add(&mut self, e: [LogEntry])`
+/// (such as [LogQueue] or [Context](https://docs.rs/wasm-service/0.2/wasm_service/struct.Context.html))
+///
 ///
 /// Values can be anything that implements [ToString]
 /// Key names must use the same syntax as a rust identifier, e.g., no spaces, punctuation, etc.

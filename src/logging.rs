@@ -1,5 +1,3 @@
-//! Asynchronous logging
-//!
 use crate::time::current_time_millis;
 use async_trait::async_trait;
 use serde::Serialize;
@@ -65,7 +63,7 @@ impl fmt::Display for Severity {
     }
 }
 
-/// LogEntry, usually created with the log! macro.
+/// LogEntry, usually created with the [`log!`] macro.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LogEntry {
@@ -125,7 +123,7 @@ struct CxLogMsg<'a> {
     pub log_entries: Vec<LogEntry>,
 }
 
-/// Queue of log entries to be sent to log service
+/// Queue of log entries to be sent to [Logger]
 #[derive(Debug)]
 pub struct LogQueue {
     entries: Vec<LogEntry>,
@@ -214,7 +212,7 @@ pub struct CoralogixConfig {
     pub endpoint: &'static str,
 }
 
-/// Implementation of Logger for Coralogix
+/// Implementation of Logger for [Coralogix](https://coralogix.com/)
 pub struct CoralogixLogger {
     config: CoralogixConfig,
     client: reqwest::Client,
@@ -239,7 +237,8 @@ impl CoralogixLogger {
 
 #[async_trait(?Send)]
 impl Logger for CoralogixLogger {
-    /// Send logs to Coralogix service. May return error if there was a problem sending.
+    /// Send logs to [Coralogix](https://coralogix.com/) service.
+    /// May return error if there was a problem sending.
     async fn send(
         &self,
         sub: &str,
@@ -264,7 +263,10 @@ impl Logger for CoralogixLogger {
     }
 }
 
-/// Logger that sends all messages to console.log (browser). Only available for "wasm32" target builds
+/// Logger that sends all messages to
+/// [console.log](https://developer.mozilla.org/en-US/docs/Web/API/Console/log).
+/// Only available for "wasm32" target. On Cloudflare workers, console.log output is
+/// available in the terminal for `wrangler dev` and `wrangler preview` modes.
 #[cfg(any(doc, target_arch = "wasm32"))]
 #[derive(Default, Debug)]
 pub struct ConsoleLogger {}
