@@ -2,10 +2,10 @@ use crate::time::current_time_millis;
 use async_trait::async_trait;
 use serde::Serialize;
 use serde_repr::Serialize_repr;
-use std::{fmt, rc::Rc, sync::Mutex};
+use std::fmt;
 
 /// Severity level
-#[derive(Debug, Serialize_repr, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Serialize_repr, PartialEq, PartialOrd)]
 #[repr(u8)]
 pub enum Severity {
     /// The most verbose level, aka Trace
@@ -88,6 +88,8 @@ pub struct LogEntry {
     pub thread_id: Option<String>,
 }
 
+unsafe impl Send for LogEntry {}
+
 impl fmt::Display for LogEntry {
     // omits some fields for brevity
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -123,6 +125,19 @@ struct CxLogMsg<'a> {
     pub log_entries: Vec<LogEntry>,
 }
 
+#[derive(Clone, Debug)]
+struct CxErr {
+    msg: String,
+}
+
+impl fmt::Display for CxErr {
+    // omits some fields for brevity
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", &self.msg)
+    }
+}
+impl std::error::Error for CxErr {}
+
 /// Queue of log entries to be sent to [Logger]
 #[derive(Debug)]
 pub struct LogQueue {
@@ -143,6 +158,11 @@ impl LogQueue {
         Self::default()
     }
 
+    /// initialize from existing entries (useful if you want to add more with log!
+    pub fn from(entries: Vec<LogEntry>) -> Self {
+        Self { entries }
+    }
+
     /// Returns all queued items, emptying self
     pub fn take(&mut self) -> Vec<LogEntry> {
         let mut ve: Vec<LogEntry> = Vec::new();
@@ -159,22 +179,10 @@ impl LogQueue {
     pub fn clear(&mut self) {
         self.entries.clear();
     }
-}
 
-impl crate::AppendsLog for LogQueue {
     /// Appends a log entry to the queue
-    fn log(&mut self, e: LogEntry) {
+    pub fn log(&mut self, e: LogEntry) {
         self.entries.push(e)
-    }
-}
-
-impl crate::AppendsLogInnerMut for Rc<Mutex<LogQueue>> {
-    /// Appends log entry to deferred log queue
-    /// Since the parameter is not mut, this only works with Mutex or cell types
-    fn log(&self, e: LogEntry) {
-        use crate::AppendsLog;
-        let mut queue = self.lock().unwrap();
-        queue.log(e);
     }
 }
 
@@ -193,16 +201,17 @@ impl fmt::Display for LogQueue {
 
 /// Trait for logging service that receives log messages
 #[async_trait(?Send)]
-pub trait Logger {
+pub trait Logger: Send {
     /// Send entries to logger
     async fn send(
         &self,
-        sub: &str,
+        sub: &'_ str,
         entries: Vec<LogEntry>,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 /// Configuration parameters for Coralogix service
+#[derive(Debug)]
 pub struct CoralogixConfig {
     /// API key, provided by Coralogix
     pub api_key: &'static str,
@@ -213,15 +222,15 @@ pub struct CoralogixConfig {
 }
 
 /// Implementation of Logger for [Coralogix](https://coralogix.com/)
+#[derive(Debug)]
 pub struct CoralogixLogger {
     config: CoralogixConfig,
     client: reqwest::Client,
 }
-unsafe impl Send for CoralogixLogger {}
 
 impl CoralogixLogger {
     /// Initialize logger with configuration
-    pub fn init(config: CoralogixConfig) -> Result<Box<dyn Logger>, reqwest::Error> {
+    pub fn init(config: CoralogixConfig) -> Result<Box<dyn Logger + Send>, reqwest::Error> {
         use reqwest::header::{self, HeaderValue, CONNECTION, CONTENT_TYPE};
         let mut headers = header::HeaderMap::new();
         // all our requests are json. this header is recommended by Coralogix
@@ -241,7 +250,7 @@ impl Logger for CoralogixLogger {
     /// May return error if there was a problem sending.
     async fn send(
         &self,
-        sub: &str,
+        sub: &'_ str,
         entries: Vec<LogEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         if !entries.is_empty() {
@@ -256,8 +265,11 @@ impl Logger for CoralogixLogger {
                 .post(self.config.endpoint)
                 .json(&msg)
                 .send()
-                .await?;
-            check_status(resp).await?;
+                .await
+                .map_err(|e| CxErr { msg: e.to_string() })?;
+            check_status(resp)
+                .await
+                .map_err(|e| CxErr { msg: e.to_string() })?;
         }
         Ok(())
     }
@@ -285,7 +297,7 @@ impl Logger for ConsoleLogger {
     /// Sends logs to console.log handler
     async fn send(
         &self,
-        sub: &str,
+        sub: &'_ str,
         entries: Vec<LogEntry>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         for e in entries.iter() {
@@ -300,16 +312,15 @@ impl Logger for ConsoleLogger {
 // Instead of just returning error for non-2xx status (via resp.error_for_status)
 // include response body which may have additional diagnostic info
 async fn check_status(resp: reqwest::Response) -> Result<(), Box<dyn std::error::Error>> {
-    match resp.status().is_success() {
-        true => Ok(()),
-        false => {
-            let status = resp.status().as_u16();
-            let body = resp.text().await.unwrap_or_default();
-            Err(Box::new(Error::Cx(format!(
-                "Logging Error: status:{} {}",
-                status, body
-            ))))
-        }
+    let status = resp.status().as_u16();
+    if status >= 200 && status < 300 {
+        Ok(())
+    } else {
+        let body = resp.text().await.unwrap_or_default();
+        Err(Box::new(Error::Cx(format!(
+            "Logging Error: status:{} {}",
+            status, body
+        ))))
     }
 }
 
