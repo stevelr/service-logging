@@ -330,7 +330,7 @@ impl Logger for ConsoleLogger {
 // include response body which may have additional diagnostic info
 async fn check_status(resp: reqwest::Response) -> Result<(), Box<dyn std::error::Error>> {
     let status = resp.status().as_u16();
-    if status >= 200 && status < 300 {
+    if (200..300).contains(&status) {
         Ok(())
     } else {
         let body = resp.text().await.unwrap_or_default();
