@@ -275,23 +275,23 @@ impl Logger for CoralogixLogger {
     }
 }
 
-/// Logger that sends all messages to
+/// Logger that sends all messages (on wasm32 targets) to
 /// [console.log](https://developer.mozilla.org/en-US/docs/Web/API/Console/log).
-/// Only available for "wasm32" target. On Cloudflare workers, console.log output is
+/// On Cloudflare workers, console.log output is
 /// available in the terminal for `wrangler dev` and `wrangler preview` modes.
-#[cfg(any(doc, target_arch = "wasm32"))]
+/// To simplify debugging and testing, ConsoleLogger on non-wasm32 targets is implemented
+/// to send output to stdout using println!
 #[derive(Default, Debug)]
 pub struct ConsoleLogger {}
 
-#[cfg(any(doc, target_arch = "wasm32"))]
 impl ConsoleLogger {
-    /// Initialize console logger. (Only available for "wasm32" target builds)
+    /// Initialize console logger
     pub fn init() -> Box<dyn Logger + Send> {
         Box::new(ConsoleLogger::default())
     }
 }
 
-#[cfg(any(doc, target_arch = "wasm32"))]
+#[cfg(target_arch = "wasm32")]
 #[async_trait(?Send)]
 impl Logger for ConsoleLogger {
     /// Sends logs to console.log handler
@@ -303,6 +303,23 @@ impl Logger for ConsoleLogger {
         for e in entries.iter() {
             let msg = format!("{} {} {} {}", e.timestamp, sub, e.severity, e.text);
             web_sys::console::log_1(&wasm_bindgen::JsValue::from_str(&msg));
+        }
+        Ok(())
+    }
+}
+
+/// ConsoleLogger on non-wasm32 builds outputs with println!, to support debugging and testing
+#[cfg(not(target_arch = "wasm32"))]
+#[async_trait(?Send)]
+impl Logger for ConsoleLogger {
+    /// Sends logs to console.log handler
+    async fn send(
+        &self,
+        sub: &'_ str,
+        entries: Vec<LogEntry>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for e in entries.iter() {
+            println!("{} {} {} {}", e.timestamp, sub, e.severity, e.text);
         }
         Ok(())
     }

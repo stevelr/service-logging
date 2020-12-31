@@ -21,16 +21,18 @@ alloc = ["serde_json/alloc", "serde/alloc" ]
 [dependencies]
 async-trait = "0.1"
 serde_repr = "0.1"
+reqwest = { version="^0.10.9", features=["json"] }
 
 # optional
 serde_json = { version="1.0", default-features=false, optional=true }
 serde = { version = "1.0", optional=true, features=["derive"] }
 
-[dependencies.reqwest]
-version = "^0.10.9"
-features = [ "json" ]
-
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys = "0.3"
 wasm-bindgen = "0.2"
 web-sys = { version="0.3", features=["console"] }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+wasm-bindgen-futures = "0.4"
+tokio = { version="1.0", features=["macros","rt"] }

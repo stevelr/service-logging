@@ -5,24 +5,26 @@
 mod logging;
 mod time;
 
-#[cfg(any(doc, target_arch = "wasm32"))]
+/// ConsoleLogger sends output to the javascript console (wasm32 targets) or stdout (println! for
+/// non-wasm32 targets)
 pub use logging::ConsoleLogger;
 pub use logging::{
     CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,
 };
 
 /// The `log!` macro can be used to create structured log entries for later use by [Logger.send](Logger::send)
+/// The first two parameters are fixed:
+///  - a writable queue (or something with a log() method)
+///  - severity level
+/// All remaining parameters are in the form key:value. Key is any word (using the same syntax
+/// as
 ///
 /// ```
-/// use service_logging::{log, Logger, LogQueue, Severity};
+/// use service_logging::{log, LogQueue, Severity::Info};
 /// let mut lq = LogQueue::default();
-/// let url = "https://example.com";
 ///
-/// log!(lq, Severity::Info,
-///     method: "GET",
-///     url: url,
-///     status: 200
-/// );
+/// // log http parameters
+/// log!(lq, Info, method: "GET", url: "https://example.com", status: 200);
 /// ```
 ///
 /// Parameters are of the form: (queue, severity, key:value, key:value, ...).
@@ -42,7 +44,7 @@ macro_rules! log {
     ( $queue:expr,  $sev:expr,  $( $key:tt $_t:tt  $val:expr ),* ) => {{
         let mut fields: std::collections::BTreeMap<String, String> = std::collections::BTreeMap::new();
         let mut has_text = false;
-        let mut entry = service_logging::LogEntry { severity: ($sev), ..service_logging::LogEntry::default() };
+        let mut entry = service_logging::LogEntry { severity: ($sev), ..Default::default() };
         $(
             let val = $val.to_string();
             let key = stringify!($key);
