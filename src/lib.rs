@@ -9,7 +9,7 @@ mod time;
 /// non-wasm32 targets)
 pub use logging::ConsoleLogger;
 pub use logging::{
-    CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,
+    silent_logger, CoralogixConfig, CoralogixLogger, LogEntry, LogLevel, LogQueue, Logger, Severity,
 };
 
 /// The `log!` macro can be used to create structured log entries for later use by [Logger.send](Logger::send)

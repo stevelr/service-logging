@@ -210,6 +210,23 @@ pub trait Logger: Send {
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
+/// Logger that drops logs
+#[doc(hidden)]
+struct BlackHoleLogger {}
+#[async_trait(?Send)]
+impl Logger for BlackHoleLogger {
+    async fn send(&self, _: &'_ str, _: Vec<LogEntry>) -> Result<(), Box<dyn std::error::Error>> {
+        Ok(())
+    }
+}
+
+#[doc(hidden)]
+/// Create a logger that doesn't log anything
+/// This can be used for Default implementations that require a Logger impl
+pub fn silent_logger() -> Box<impl Logger> {
+    Box::new(BlackHoleLogger {})
+}
+
 /// Configuration parameters for Coralogix service
 #[derive(Debug)]
 pub struct CoralogixConfig {

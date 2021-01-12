@@ -1,6 +1,9 @@
 # Changelog
 
-## 0.4
+## v0.4.1  2021-01-12
+- added silent_logger (logs nothing)
+
+## v0.4.0  2020-12-31
 
 - Breaking change: 
   - Removed prelude module. If you previously imported "service_logging::prelude::*",
