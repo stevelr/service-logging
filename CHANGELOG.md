@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.4.1  2021-01-12
+## v0.4.2  2021-01-12
 - added silent_logger (logs nothing)
 
 ## v0.4.0  2020-12-31
