@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.4.5  2021-01-23
+- updated dependency to reqwest 0.11
+
 ## v0.4.2  2021-01-12
 - added silent_logger (logs nothing)
 

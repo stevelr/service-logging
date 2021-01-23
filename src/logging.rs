@@ -102,7 +102,7 @@ impl Default for LogEntry {
         LogEntry {
             timestamp: current_time_millis(),
             severity: Severity::Debug,
-            text: String::from(""),
+            text: String::new(),
             category: None,
             class_name: None,
             method_name: None,
