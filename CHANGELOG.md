@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.6  (unreleased)
+## v0.4.6
 
 - Coralogix config parameters can be &str and don't need to &'static str
 
