@@ -229,19 +229,21 @@ pub fn silent_logger() -> Box<impl Logger> {
 
 /// Configuration parameters for Coralogix service
 #[derive(Debug)]
-pub struct CoralogixConfig {
+pub struct CoralogixConfig<'config> {
     /// API key, provided by Coralogix
-    pub api_key: &'static str,
+    pub api_key: &'config str,
     /// Application name, included as a feature for all log messages
-    pub application_name: &'static str,
+    pub application_name: &'config str,
     /// URL prefix for service invocation, e.g. `https://api.coralogix.con/api/v1/logs`
-    pub endpoint: &'static str,
+    pub endpoint: &'config str,
 }
 
 /// Implementation of Logger for [Coralogix](https://coralogix.com/)
 #[derive(Debug)]
 pub struct CoralogixLogger {
-    config: CoralogixConfig,
+    api_key: String,
+    application_name: String,
+    endpoint: String,
     client: reqwest::Client,
 }
 
@@ -257,7 +259,12 @@ impl CoralogixLogger {
         let client = reqwest::Client::builder()
             .default_headers(headers)
             .build()?;
-        Ok(Box::new(Self { config, client }))
+        Ok(Box::new(Self {
+            api_key: config.api_key.to_string(),
+            application_name: config.application_name.to_string(),
+            endpoint: config.endpoint.to_string(),
+            client,
+        }))
     }
 }
 
@@ -274,12 +281,12 @@ impl Logger for CoralogixLogger {
             let msg = CxLogMsg {
                 subsystem_name: sub,
                 log_entries: entries,
-                private_key: self.config.api_key,
-                application_name: self.config.application_name,
+                private_key: &self.api_key,
+                application_name: &self.application_name,
             };
             let resp = self
                 .client
-                .post(self.config.endpoint)
+                .post(&self.endpoint)
                 .json(&msg)
                 .send()
                 .await

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.6  (unreleased)
+
+- Coralogix config parameters can be &str and don't need to &'static str
+
 ## v0.4.5  2021-01-23
 - updated dependency to reqwest 0.11
 
