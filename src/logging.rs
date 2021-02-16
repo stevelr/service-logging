@@ -4,6 +4,8 @@ use serde::Serialize;
 use serde_repr::Serialize_repr;
 use std::fmt;
 
+const LIB_USER_AGENT: &str = concat![env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION")];
+
 /// Severity level
 #[derive(Clone, Debug, Serialize_repr, PartialEq, PartialOrd)]
 #[repr(u8)]
@@ -88,7 +90,7 @@ pub struct LogEntry {
     pub thread_id: Option<String>,
 }
 
-unsafe impl Send for LogEntry {}
+//unsafe impl Send for LogEntry {}
 
 impl fmt::Display for LogEntry {
     // omits some fields for brevity
@@ -250,12 +252,14 @@ pub struct CoralogixLogger {
 impl CoralogixLogger {
     /// Initialize logger with configuration
     pub fn init(config: CoralogixConfig) -> Result<Box<dyn Logger + Send>, reqwest::Error> {
-        use reqwest::header::{self, HeaderValue, CONNECTION, CONTENT_TYPE};
+        use reqwest::header::{self, HeaderValue, CONTENT_TYPE, USER_AGENT};
         let mut headers = header::HeaderMap::new();
         // all our requests are json. this header is recommended by Coralogix
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         // just in case this helps us drop connection more quickly
-        headers.insert(CONNECTION, HeaderValue::from_static("close"));
+        //headers.insert(CONNECTION, HeaderValue::from_static("close"));
+        headers.insert(USER_AGENT, HeaderValue::from_static(LIB_USER_AGENT));
+
         let client = reqwest::Client::builder()
             .default_headers(headers)
             .build()?;

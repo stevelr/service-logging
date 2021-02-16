@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.4.7
+
+- set user agent on coralogix calls to crate name & version
+- don't set Connection:close
+
 ## v0.4.6
 
 - Coralogix config parameters can be &str and don't need to &'static str
